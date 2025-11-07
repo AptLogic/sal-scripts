@@ -60,13 +60,13 @@ sign: remove-xattrs
 	@sudo ./sign_python_framework.py -v -S "${DEV_APP_CERT}" -L ${WORK_D}/usr/local/sal/Python.framework
 
 remove-xattrs:
-	@sudo xattr -rd com.dropbox.attributes ${WORK_D}
-	@sudo xattr -rd com.dropbox.internal ${WORK_D}
-	@sudo xattr -rd com.apple.ResourceFork ${WORK_D}
-	@sudo xattr -rd com.apple.FinderInfo ${WORK_D}
-	@sudo xattr -rd com.apple.metadata:_kMDItemUserTags ${WORK_D}
-	@sudo xattr -rd com.apple.metadata:kMDItemFinderComment ${WORK_D}
-	@sudo xattr -rd com.apple.metadata:kMDItemOMUserTagTime ${WORK_D}
-	@sudo xattr -rd com.apple.metadata:kMDItemOMUserTags ${WORK_D}
-	@sudo xattr -rd com.apple.metadata:kMDItemStarRating ${WORK_D}
-	@sudo xattr -rd com.dropbox.ignored ${WORK_D}
+	@sudo xattr -rsd com.dropbox.attributes ${WORK_D}
+	@sudo xattr -rsd com.dropbox.internal ${WORK_D}
+	@sudo xattr -rsd com.apple.ResourceFork ${WORK_D}
+	@sudo xattr -rsd com.apple.FinderInfo ${WORK_D}
+	@sudo xattr -rsd com.apple.metadata:_kMDItemUserTags ${WORK_D}
+	@sudo xattr -rsd com.apple.metadata:kMDItemFinderComment ${WORK_D}
+	@sudo xattr -rsd com.apple.metadata:kMDItemOMUserTagTime ${WORK_D}
+	@sudo xattr -rsd com.apple.metadata:kMDItemOMUserTags ${WORK_D}
+	@sudo xattr -rsd com.apple.metadata:kMDItemStarRating ${WORK_D}
+	@sudo xattr -rsd com.dropbox.ignored ${WORK_D}

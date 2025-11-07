@@ -8,7 +8,7 @@ import platform
 import plistlib
 import re
 import subprocess
-from distutils.version import StrictVersion
+from packaging import version
 
 import sal
 
@@ -125,7 +125,7 @@ def get_pending():
 
     # The following regex code is from Shea Craig's work on the Salt
     # mac_softwareupdate module. Reference that for future updates.
-    if StrictVersion(platform.mac_ver()[0]) >= StrictVersion("10.15"):
+    if version.parse(platform.mac_ver()[0]) >= version.parse("10.15"):
         # Example output:
         # Software Update Tool
         #

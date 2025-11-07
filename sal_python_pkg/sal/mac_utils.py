@@ -20,7 +20,7 @@ from Foundation import (
     NSNull,
 )
 
-from sal.client import get_sal_client, MacKeychainClient
+from sal.client import get_sal_client
 
 
 BUNDLE_ID = "com.github.salopensource.sal"
@@ -36,21 +36,12 @@ def setup_sal_client():
         if not all(exists):
             logging.warning(
                 "Argument warning! If using the `CACert`, `SSLClientCertificate`, or "
-                "`SSLClientKey` prefs, they must all be either paths to cert files or the "
-                "common name of the certs to find in the keychain."
+                "`SSLClientKey` prefs, they must all be paths to cert files. Using certs "
+                "stored in the Keychain is no longer supported."
             )
 
-        # If any of the above have been passed as a path, we have to
-        # use a vanilla Session.
-        logging.debug("Using SalClient")
-        client = get_sal_client()
-    else:
-        # Assume that any passed certs are by CN since they don't
-        # exist as files anywhere.
-        # If we're going to use the keychain, we need to use a
-        # macsesh
-        logging.debug("Using MacKeychainClient")
-        client = get_sal_client(MacKeychainClient)
+    logging.debug("Using SalClient")
+    client = get_sal_client()
 
     if ca_cert:
         client.verify = ca_cert

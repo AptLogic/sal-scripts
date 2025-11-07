@@ -1,4 +1,4 @@
-from sal.client import MacKeychainClient, SalClient, get_sal_client
+from sal.client import SalClient, get_sal_client
 
 try:
     from sal.mac_utils import *

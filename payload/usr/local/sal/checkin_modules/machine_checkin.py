@@ -5,10 +5,9 @@ import pathlib
 import plistlib
 import re
 import subprocess
-import sys
+from urllib.request import urlopen
 from xml.etree import ElementTree
 
-import macsesh
 from SystemConfiguration import (
     SCDynamicStoreCreate,
     SCDynamicStoreCopyValue,
@@ -204,10 +203,9 @@ def get_model_code(serial):
 def query_apple_support(serial):
     model_code = get_model_code(serial)
     tree = ElementTree.ElementTree()
-    session = macsesh.Session()
-    response = session.get(
-        f"https://support-sp.apple.com/sp/product?cc={model_code}&lang=en_US"
-    )
+    with urlopen(f"https://support-sp.apple.com/sp/product?cc={model_code}&lang=en_US") as response:
+        body = response.read()
+        response = type("R", (), {"text": body.decode("utf-8", "ignore")})()
     try:
         tree = ElementTree.fromstring(response.text)
     except ElementTree.ParseError:

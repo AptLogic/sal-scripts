@@ -1,10 +1,4 @@
 import logging
-import os
-
-try:
-    from macsesh import Session as MacSeshSession
-except ImportError:
-    MacSeshSession = None
 import requests
 
 
@@ -90,10 +84,6 @@ class SalClient:
         url = url[1:] if url.startswith("/") else url
         url = url[:-1] if url.endswith("/") else url
         return "/".join((self.base_url, url)) + "/"
-
-
-class MacKeychainClient(SalClient):
-    session_class = MacSeshSession
 
 
 def get_sal_client(with_client_class=None):

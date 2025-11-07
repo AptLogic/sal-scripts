@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Build script for Python 3 framework for Sal scripts
 TOOLSDIR=$(dirname "$0")
-PYTHON_VERSION=3.9.7
+PYTHON_VERSION=3.14.0
 
 # build the framework
 /tmp/relocatable-python-git/make_relocatable_python_framework.py \

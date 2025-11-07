@@ -1,7 +1,8 @@
-sal_python_pkg/
-pyobjc==8.5
-#urllib3==1.26.5
-requests==2.26.0
-MacSesh==0.3.0
-six==1.16.0
---no-binary :all:
+./sal_python_pkg/
+pyobjc-core==12.0
+pyobjc-framework-SystemConfiguration==12.0
+requests==2.32.5
+six==1.17.0
+setuptools==80.9.0
+packaging==25
+--only-binary :all:
