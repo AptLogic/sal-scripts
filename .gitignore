@@ -73,3 +73,8 @@ report_broken_client/build
 .vscode/
 config.mk
 entitlements.plist
+.DS_Store
+payload/.DS_Store
+payload/usr/.DS_Store
+payload/usr/local/.DS_Store
+payload/usr/local/sal/.DS_Store
