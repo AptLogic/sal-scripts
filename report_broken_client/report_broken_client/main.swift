@@ -13,7 +13,13 @@ import Foundation
 // Get Serial function
 
 func getSerial() -> String {
-    let platformExpert = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"))
+    let platformExpert: io_service_t
+    if #available(macOS 12, *) {
+        platformExpert = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"))
+    } else {
+        // Fallback on earlier versions
+        platformExpert = IOServiceGetMatchingService(kIOMasterPortDefault, IOServiceMatching("IOPlatformExpertDevice"))
+    }
     let serialNumberAsCFString = IORegistryEntryCreateCFProperty(platformExpert, kIOPlatformSerialNumberKey as CFString, kCFAllocatorDefault, 0)
     return serialNumberAsCFString?.takeUnretainedValue() as! String
 }
