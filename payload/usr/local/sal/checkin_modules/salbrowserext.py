@@ -154,7 +154,12 @@ def list_human_user_homes() -> List[Tuple[str,str]]:
                     if pwent.pw_uid >= 500 and pwent.pw_dir.startswith("/Users/") and os.path.isdir(pwent.pw_dir):
                         return [(pwent.pw_name, pwent.pw_dir)]
                 except KeyError:
-                    pass
+                    # Console user not found in passwd database; in ACTIVE_USER_ONLY
+                    # mode, do not fall back to full enumeration.
+                    return []
+                # Console user was found but did not meet UID/home criteria; in
+                # ACTIVE_USER_ONLY mode, do not enumerate all users.
+                return []
         users: List[Tuple[str,str]] = []
         for pwent in pwd.getpwall():
             try:
@@ -188,10 +193,7 @@ def chromium_risk_from_permissions(perms: List[str], host_perms: List[str]) -> T
     sens_hits = sorted(set(p for p in perms if p in SENSITIVE_PERMISSIONS))
     if sens_hits:
         score += min(4, len(sens_hits)); reasons.append("sensitive_perms:"+",".join(sens_hits[:6]))
-    if "nativeMessaging" in perms:
-        score += 1
-        if not any("nativeMessaging" in r for r in reasons):
-            reasons.append("nativeMessaging")
+
     score = max(0, min(10, score))
     level = "low" if score < 3 else ("medium" if score < 7 else "high")
     return score, level, reasons
@@ -458,7 +460,9 @@ def collect_firefox_for_user(user: str, home: str) -> List[Dict[str,Any]]:
                         upd = a.get("updateDate")
                         if upd is not None:
                             ext["update_time_iso"] = datetime.fromtimestamp(int(upd)/1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                    except Exception: pass
+                    except Exception:
+                        # As with installDate, some profiles may have missing or malformed updateDate; ignore and omit update_time_iso.
+                        pass
                     results.append(ext)
                 except Exception:
                     continue
@@ -482,7 +486,7 @@ def collect_all(diag: List[Dict[str,str]]) -> Dict[str,Any]:
         try: c = collect_chromium_for_user(user,home,"chrome",["Google","Chrome"]); all_exts.extend(c); counts["chrome"] += len(c)
         except Exception as e: diag.append({"stage":"chrome","detail":f"{user}: {e}"}); _log(f"chrome error ({user}): {traceback.format_exc()}")
         try: e = collect_chromium_for_user(user,home,"edge",["Microsoft Edge"]); all_exts.extend(e); counts["edge"] += len(e)
-        except Exception as e_: diag.append({"stage":"edge","detail":f"{user}: {e_}"}); _log(f"edge error ({user}): {traceback.format_exc()}")
+        except Exception as e: diag.append({"stage":"edge","detail":f"{user}: {e}"}); _log(f"edge error ({user}): {traceback.format_exc()}")
         try: b = collect_chromium_for_user(user,home,"brave",["BraveSoftware","Brave-Browser"]); all_exts.extend(b); counts["brave"] += len(b)
         except Exception as e: diag.append({"stage":"brave","detail":f"{user}: {e}"}); _log(f"brave error ({user}): {traceback.format_exc()}")
         try: cr = collect_chromium_for_user(user,home,"chromium",["Chromium"]); all_exts.extend(cr); counts["chromium"] += len(cr)
