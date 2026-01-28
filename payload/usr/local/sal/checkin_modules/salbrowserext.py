@@ -6,7 +6,16 @@
 # - Captures Python executable/version, sys.path, and module file SHA256
 # - If 'import sal' fails, logs the traceback to module log
 
-import sys, os, hashlib, json, re, plistlib, pwd, subprocess, time, traceback
+import sys
+import os
+import hashlib
+import json
+import re
+import plistlib
+import pwd
+import subprocess
+import time
+import traceback
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Tuple, Optional, Set
 
@@ -23,6 +32,7 @@ def _log(msg: str) -> None:
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write(f"{_utc_iso()} [{MODULE_NAME}] {msg}\n")
     except Exception:
+        # Logging must never interfere with Sal checkin; ignore all logging errors.
         pass
 
 # --- EARLY DIAGNOSTICS (before import sal) ---
@@ -54,8 +64,8 @@ try:
     _log("import sal OK")
 except Exception as e:
     _log(f"import sal FAILED: {e}\n{traceback.format_exc()}")
-    # We can't submit facts without sal, but we continue so at least the submitter logs this file log.
-
+    # We can't submit facts without sal; exit to avoid NameError later in main().
+    sys.exit(0)
 # -------------------
 # Tunables
 # -------------------
@@ -91,13 +101,26 @@ def to_string(v: Any) -> str:
     return "" if v is None else str(v)
 
 def chrome_time_to_iso(chrome_time: Any) -> str:
+    # Chrome time is microseconds since 1601-01-01 UTC. Guard against
+    # negative or out-of-range values to avoid producing invalid dates.
     try:
         micro = int(str(chrome_time))
-        epoch = datetime(1601,1,1,tzinfo=timezone.utc)
-        return (epoch + timedelta(microseconds=micro)).strftime("%Y-%m-%dT%H:%M:%SZ")
     except Exception:
         return to_string(chrome_time)
 
+    if micro < 0:
+        # Negative Chrome timestamps are invalid; fall back to raw value.
+        return to_string(chrome_time)
+
+    try:
+        epoch = datetime(1601, 1, 1, tzinfo=timezone.utc)
+        dt = epoch + timedelta(microseconds=micro)
+        # Defensive check: ensure we did not wrap before the epoch.
+        if dt < epoch:
+            return to_string(chrome_time)
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception:
+        return to_string(chrome_time)
 def safe_read_json(path: str) -> Optional[dict]:
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -117,8 +140,8 @@ def run_stat_console_user() -> Optional[str]:
         out = subprocess.check_output(["/usr/bin/stat","-f","%Su","/dev/console"], text=True).strip()
         if out and out != "root":
             return out
-    except Exception:
-        pass
+    except Exception as e:
+        _log(f"run_stat_console_user error: {e}")
     return None
 
 def list_human_user_homes() -> List[Tuple[str,str]]:
@@ -214,7 +237,7 @@ def collect_safari_plist_for_user(user: str, home: str) -> List[Dict[str, Any]]:
 def iter_app_bundles(time_budget: float) -> List[str]:
     apps: List[str] = []
     t0 = time.time()
-    for root in ("/Applications","/System/Applications", os.path.expanduser("~/Applications")):
+    for root in SAFARI_APP_SCAN_DIRS:
         if time.time() - t0 > time_budget: break
         if not os.path.isdir(root): continue
         try:
@@ -276,8 +299,8 @@ def enumerate_chromium_profiles(base_dir: str) -> List[str]:
             if not os.path.isdir(p): continue
             if os.path.isfile(os.path.join(p,"Preferences")) or os.path.isdir(os.path.join(p,"Extensions")):
                 profiles.append(d)
-    except Exception:
-        pass
+    except Exception as e:
+        _log(f"enumerate_chromium_profiles error for {base_dir}: {e}")
     return profiles
 
 def chromium_fallback_scan_profile(base_profile: str, browser: str, user: str, profile: str, seen_ids: Set[str]) -> List[Dict[str, Any]]:
@@ -428,7 +451,9 @@ def collect_firefox_for_user(user: str, home: str) -> List[Dict[str,Any]]:
                         inst = a.get("installDate")
                         if inst is not None:
                             ext["install_time_iso"] = datetime.fromtimestamp(int(inst)/1000, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                    except Exception: pass
+                    except Exception:
+                        # Some Firefox profiles may have missing or malformed installDate values; ignore and omit install_time_iso.
+                        pass
                     try:
                         upd = a.get("updateDate")
                         if upd is not None:
@@ -542,7 +567,7 @@ def publish(submission: Dict[str,Any], inventory: Dict[str,Any], diag: List[Dict
         submission["messages"].append({"message_type":"WARN","text":f"{MODULE_NAME}: no extensions discovered."})
     if over_limit:
         submission["messages"].append({"message_type":"WARN","text":f"{MODULE_NAME}: flattened capped at {MAX_FLATTENED_EXTENSIONS}."})
-    if facts_for_ui.get("json_truncated") == "True":
+    if truncated:
         submission["messages"].append({"message_type":"WARN","text":f"{MODULE_NAME}: browser_extensions_json truncated."})
     submission["messages"].append({"message_type":"INFO","text":f"{MODULE_NAME} finish {_utc_iso()}"})
     try:
