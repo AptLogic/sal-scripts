@@ -836,10 +836,9 @@ def publish(submission: Dict[str,Any], inventory: Dict[str,Any], diag: List[Dict
             break
         
         browser = normalize_key(ext.get("browser",""))
-        user = normalize_key(ext.get("user",""))
         profile = normalize_key(ext.get("profile",""))
         extid = normalize_key(ext.get("id","")) or f"idx{idx}"
-        prefix = f"browser_ext_{browser}_{user}_{profile}_{extid}"
+        prefix = f"browser_ext_{browser}_{profile}_{extid}"
         
         # Detect and handle key collisions
         if prefix in seen_prefixes:
